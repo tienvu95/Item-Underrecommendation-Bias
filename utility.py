@@ -411,7 +411,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
 
 def relative_std(dictionary):
     tmp = []
-    for key, value in sorted(dictionary.iteritems(), key=lambda (k, v): (v, k)):
+    for key, value in sorted(dictionary.iteritems(), key = lambda x: x[0]):
         tmp.append(value)
     rstd = np.std(tmp) / (np.mean(tmp) + 1e-10)
     return rstd
