@@ -60,6 +60,8 @@ class DPR_REO:
         print(self.args)
         self._prepare_model()
 
+
+    #load bpr checkpoint
     def loadmodel(self, saver, checkpoint_dir):
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
@@ -84,6 +86,7 @@ class DPR_REO:
 
     def _prepare_model(self):
         with tf.name_scope("input_data"):
+            # declare embedding u i j, genre to predict
             self.user_input = tf.placeholder(tf.int32, shape=[None, 1], name="user_input")
             self.item_input_pos = tf.placeholder(tf.int32, shape=[None, 1], name="item_input_pos")
             self.item_input_neg = tf.placeholder(tf.int32, shape=[None, 1], name="item_input_neg")
@@ -92,7 +95,7 @@ class DPR_REO:
                                                    , name="input_item_genre")
             self.input_item_error_weight = tf.placeholder(dtype=tf.float32, shape=[None, 1]
                                                           , name="input_item_error_weight")
-
+        #this is the part initialize BPR for MF
         with tf.variable_scope("BPR", reuse=tf.AUTO_REUSE):
             self.P = tf.get_variable(name="P",
                                      initializer=tf.truncated_normal(shape=[self.num_rows, self.hidden_neuron], mean=0,
@@ -102,6 +105,8 @@ class DPR_REO:
                                                                      stddev=0.03), dtype=tf.float32)
         para_r = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="BPR")
 
+
+        #adversary as a mlp
         with tf.variable_scope("Adversarial", reuse=tf.AUTO_REUSE):
             num_layer = len(self.layers)
             adv_W = []
@@ -376,4 +381,3 @@ print('Averaged RSP    @1\t%.7f\t||\t@5\t%.7f\t||\t@10\t%.7f\t||\t@15\t%.7f' \
 print('Averaged REO @1\t%.7f\t||\t@5\t%.7f\t||\t@10\t%.7f\t||\t@15\t%.7f' \
       % (REO[0], REO[1], REO[2], REO[3]))
 print('*' * 100)
-
