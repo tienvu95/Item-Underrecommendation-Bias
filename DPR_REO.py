@@ -131,14 +131,16 @@ class DPR_REO:
                                                                         mean=0, stddev=0.03), dtype=tf.float32)
         para_a = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="Adversarial")
 
+
+        ##prep embedding for bpr
         p = tf.reduce_sum(tf.nn.embedding_lookup(self.P, self.user_input), 1)
         q_neg = tf.reduce_sum(tf.nn.embedding_lookup(self.Q, self.item_input_neg), 1)
         q_pos = tf.reduce_sum(tf.nn.embedding_lookup(self.Q, self.item_input_pos), 1)
-
+        ##prediction based on bpr embedding
         predict_pos = tf.reduce_sum(p * q_pos, 1)
         predict_neg = tf.reduce_sum(p * q_neg, 1)
 
-        r_cost1 = tf.reduce_sum(tf.nn.softplus(-(predict_pos - predict_neg)))
+        r_cost1 = tf.reduce_sum(tf.nn.softplus(-(predict_pos - predict_neg))) #bpr cost
         r_cost2 = self.reg * 0.5 * (self.l2_norm(self.P) + self.l2_norm(self.Q))  # regularization term
         pred = tf.matmul(self.P, tf.transpose(self.Q))
         self.s_mean = tf.reduce_mean(pred, axis=1)
@@ -146,15 +148,21 @@ class DPR_REO:
         self.s_cost = tf.reduce_sum(tf.square(self.s_mean) + tf.square(self.s_std) - 2 * tf.log(self.s_std) - 1)
         self.r_cost = r_cost1 + r_cost2 + self.reg_s * 0.5 * self.s_cost
 
+
+        #last layer = prediction by the mlp adversary
         adv_last = tf.reshape(predict_pos, [tf.shape(self.input_item_genre)[0], 1])
         for l in range(num_layer):
             adv = tf.nn.relu(tf.matmul(adv_last, adv_W[l]) + adv_b[l])
-            adv_last = adv
+            adv_last = adv #linear-relu
+        #sigmoid to convert output to prediction
         self.adv_output = tf.nn.sigmoid(tf.matmul(adv_last, adv_W_out) + adv_b_out)
+
+        #adversarial cost
         self.a_cost = tf.reduce_sum(tf.square(self.adv_output - self.input_item_genre) * self.input_item_error_weight)
 
         self.all_cost = self.r_cost - self.alpha * self.a_cost  # the loss function
 
+        #optimize for bpr, adversary and overall cost wrt to overall obj function
         with tf.variable_scope("Optimizer", reuse=tf.AUTO_REUSE):
             self.r_optimizer = tf.train.AdamOptimizer(learning_rate=self.lr_r).minimize(self.r_cost, var_list=para_r)
             self.a_optimizer = tf.train.AdamOptimizer(learning_rate=self.lr_a).minimize(self.a_cost, var_list=para_a)
@@ -190,7 +198,7 @@ class DPR_REO:
                         batch_idx_a = random_idx_a[(j * self.batch_size):((j + 1) * self.batch_size)]
                     item_idx_list = ((item_pos_list[batch_idx_a, :]).reshape((len(batch_idx_a)))).tolist()
                     _, tmp_a_cost = self.sess.run(  # do the optimization by the minibatch
-                        [self.a_optimizer, self.a_cost],
+                        [self.a_optimizer, self.a_cost], #update the adversary
                         feed_dict={self.user_input: user_list[batch_idx_a, :],
                                    self.item_input_pos: item_pos_list[batch_idx_a, :],
                                    self.item_input_neg: item_neg_list[batch_idx_a, :],
@@ -200,7 +208,7 @@ class DPR_REO:
 
                 item_idx_list = ((item_pos_list[batch_idx, :]).reshape((len(batch_idx)))).tolist()
                 _, tmp_r_cost, tmp_s_cost, tmp_s_mean, tmp_s_std = self.sess.run(  # do the optimization by the minibatch
-                    [self.all_optimizer, self.all_cost, self.s_cost, self.s_mean, self.s_std],
+                    [self.all_optimizer, self.all_cost, self.s_cost, self.s_mean, self.s_std], # update overall objective
                     feed_dict={self.user_input: user_list[batch_idx, :],
                                self.item_input_pos: item_pos_list[batch_idx, :],
                                self.item_input_neg: item_neg_list[batch_idx, :],
@@ -210,10 +218,10 @@ class DPR_REO:
                 epoch_s_mean += np.mean(tmp_s_mean)
                 epoch_s_std += np.mean(tmp_s_std)
                 epoch_s_cost += tmp_s_cost
-            else:
+            else:#for train_epoch, we only train the classifer (BPR) then append the adversarial training phase
                 item_idx_list = ((item_pos_list[batch_idx, :]).reshape((len(batch_idx)))).tolist()
                 _, tmp_r_cost, tmp_s_cost, tmp_s_mean, tmp_s_std = self.sess.run(  # do the optimization by the minibatch
-                    [self.r_optimizer, self.r_cost, self.s_cost, self.s_mean, self.s_std],
+                    [self.r_optimizer, self.r_cost, self.s_cost, self.s_mean, self.s_std], #update the weight of the classifier
                     feed_dict={self.user_input: user_list[batch_idx, :],
                                self.item_input_pos: item_pos_list[batch_idx, :],
                                self.item_input_neg: item_neg_list[batch_idx, :],
