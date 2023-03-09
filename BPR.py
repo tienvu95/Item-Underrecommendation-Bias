@@ -264,4 +264,3 @@ print('Averaged RSP    @1\t%.7f\t||\t@5\t%.7f\t||\t@10\t%.7f\t||\t@15\t%.7f' \
 print('Averaged REO @1\t%.7f\t||\t@5\t%.7f\t||\t@10\t%.7f\t||\t@15\t%.7f' \
       % (REO[0], REO[1], REO[2], REO[3]))
 print('*' * 100)
-

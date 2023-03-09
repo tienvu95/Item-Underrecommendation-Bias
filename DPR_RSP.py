@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.metrics import *
 
 
+
 class DPR_RSP:
 
     def __init__(self, sess, args, train_df, vali_df, item_genre, genre_error_weight,
@@ -84,25 +85,25 @@ class DPR_RSP:
 
     def _prepare_model(self):
         with tf.name_scope("input_data"):
-            self.user_input = tf.placeholder(tf.int32, shape=[None, 1], name="user_input")
-            self.item_input_pos = tf.placeholder(tf.int32, shape=[None, 1], name="item_input_pos")
-            self.item_input_neg = tf.placeholder(tf.int32, shape=[None, 1], name="item_input_neg")
+            self.user_input = tf.compat.v1.placeholder(tf.int32, shape=[None, 1], name="user_input")
+            self.item_input_pos = tf.compat.v1.placeholder(tf.int32, shape=[None, 1], name="item_input_pos")
+            self.item_input_neg = tf.compat.v1.placeholder(tf.int32, shape=[None, 1], name="item_input_neg")
 
-            self.input_item_genre = tf.placeholder(dtype=tf.float32, shape=[None, self.num_genre]
+            self.input_item_genre = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_genre]
                                                    , name="input_item_genre")
-            self.input_item_error_weight = tf.placeholder(dtype=tf.float32, shape=[None, 1]
+            self.input_item_error_weight = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, 1]
                                                           , name="input_item_error_weight")
 
-        with tf.variable_scope("BPR", reuse=tf.AUTO_REUSE):
-            self.P = tf.get_variable(name="P",
-                                     initializer=tf.truncated_normal(shape=[self.num_rows, self.hidden_neuron], mean=0,
+        with tf.compat.v1.variable_scope("BPR", reuse=tf.compat.v1.AUTO_REUSE):
+            self.P = tf.compat.v1.get_variable(name="P",
+                                     initializer=tf.compat.v1.truncated_normal(shape=[self.num_rows, self.hidden_neuron], mean=0,
                                                                      stddev=0.03), dtype=tf.float32)
-            self.Q = tf.get_variable(name="Q",
-                                     initializer=tf.truncated_normal(shape=[self.num_cols, self.hidden_neuron], mean=0,
+            self.Q = tf.compat.v1.get_variable(name="Q",
+                                     initializer=tf.compat.v1.truncated_normal(shape=[self.num_cols, self.hidden_neuron], mean=0,
                                                                      stddev=0.03), dtype=tf.float32)
-        para_r = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="BPR")
+        para_r = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope="BPR")
 
-        with tf.variable_scope("Adversarial", reuse=tf.AUTO_REUSE):
+        with tf.compat.v1.variable_scope("Adversarial", reuse=tf.compat.v1.AUTO_REUSE):
             num_layer = len(self.layers)
             adv_W = []
             adv_b = []
@@ -111,26 +112,32 @@ class DPR_RSP:
                     in_shape = 1
                 else:
                     in_shape = self.layers[l - 1]
-                adv_W.append(tf.get_variable(name="adv_W" + str(l),
-                                             initializer=tf.truncated_normal(shape=[in_shape, self.layers[l]],
+                adv_W.append(tf.compat.v1.get_variable(name="adv_W" + str(l),
+                                             initializer=tf.compat.v1.truncated_normal(shape=[in_shape, self.layers[l]],
                                                                              mean=0, stddev=0.03), dtype=tf.float32))
-                adv_b.append(tf.get_variable(name="adv_b" + str(l),
-                                             initializer=tf.truncated_normal(shape=[1, self.layers[l]],
+                adv_b.append(tf.compat.v1.get_variable(name="adv_b" + str(l),
+                                             initializer=tf.compat.v1.truncated_normal(shape=[1, self.layers[l]],
                                                                              mean=0, stddev=0.03), dtype=tf.float32))
-            adv_W_out = tf.get_variable(name="adv_W_out",
-                                        initializer=tf.truncated_normal(shape=[self.layers[-1], self.num_genre],
+            adv_W_out = tf.compat.v1.get_variable(name="adv_W_out",
+                                        initializer=tf.compat.v1.truncated_normal(shape=[self.layers[-1], self.num_genre],
                                                                         mean=0, stddev=0.03), dtype=tf.float32)
 
-            adv_b_out = tf.get_variable(name="adv_b_out",
-                                        initializer=tf.truncated_normal(shape=[1, self.num_genre],
+            adv_b_out = tf.compat.v1.get_variable(name="adv_b_out",
+                                        initializer=tf.compat.v1.truncated_normal(shape=[1, self.num_genre],
                                                                         mean=0, stddev=0.03), dtype=tf.float32)
-        para_a = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="Adversarial")
+        para_a = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope="Adversarial")
+
+
+        #dimension of P = (user_size * embedding_size (64 or 20 depends)), dimension of Q = (item_size * embedding_size (64 or 20 depends))
+        #dimension of user_input, item_input_neg, item_input_pos = batch size
 
         p = tf.reduce_sum(tf.nn.embedding_lookup(self.P, self.user_input), 1)
         q_neg = tf.reduce_sum(tf.nn.embedding_lookup(self.Q, self.item_input_neg), 1)
         q_pos = tf.reduce_sum(tf.nn.embedding_lookup(self.Q, self.item_input_pos), 1)
 
-        predict_pos = tf.reduce_sum(p * q_pos, 1)
+        #matrix multiplication
+
+        predict_pos = tf.reduce_sum(p * q_pos, 1) #torch.mul(p, q_pos).sum(dim=1)
         predict_neg = tf.reduce_sum(p * q_neg, 1)
 
         r_cost1 = tf.reduce_sum(tf.nn.softplus(-(predict_pos - predict_neg)))
@@ -138,9 +145,11 @@ class DPR_RSP:
         pred = tf.matmul(self.P, tf.transpose(self.Q))
         self.s_mean = tf.reduce_mean(pred, axis=1)
         self.s_std = tf.keras.backend.std(pred, axis=1)
-        self.s_cost = tf.reduce_sum(tf.square(self.s_mean) + tf.square(self.s_std) - 2 * tf.log(self.s_std) - 1)
+        self.s_cost = tf.reduce_sum(tf.square(self.s_mean) + tf.square(self.s_std) - 2 * tf.compat.v1.log(self.s_std) - 1)
         self.r_cost = r_cost1 + r_cost2 + self.reg_s * 0.5 * self.s_cost
 
+
+        #tf.shape(self.input_item_genre)[0] has shape = concat of pos_neg
         adv_last = tf.reshape(tf.concat([predict_pos, predict_neg], axis=0), [tf.shape(self.input_item_genre)[0], 1])
         for l in range(num_layer):
             adv = tf.nn.relu(tf.matmul(adv_last, adv_W[l]) + adv_b[l])
@@ -150,10 +159,10 @@ class DPR_RSP:
 
         self.all_cost = self.r_cost - self.alpha * self.a_cost  # the loss function
 
-        with tf.variable_scope("Optimizer", reuse=tf.AUTO_REUSE):
-            self.r_optimizer = tf.train.AdamOptimizer(learning_rate=self.lr_r).minimize(self.r_cost, var_list=para_r)
-            self.a_optimizer = tf.train.AdamOptimizer(learning_rate=self.lr_a).minimize(self.a_cost, var_list=para_a)
-            self.all_optimizer = tf.train.AdamOptimizer(learning_rate=self.lr_r).minimize(self.all_cost, var_list=para_r)
+        with tf.compat.v1.variable_scope("Optimizer", reuse=tf.compat.v1.AUTO_REUSE):
+            self.r_optimizer = tf.optimizers.Adam(learning_rate=self.lr_r).minimize(self.r_cost, var_list=para_r)
+            self.a_optimizer = tf.optimizers.Adam(learning_rate=self.lr_a).minimize(self.a_cost, var_list=para_a)
+            self.all_optimizer = tf.optimizers.Adam(learning_rate=self.lr_r).minimize(self.all_cost, var_list=para_r)
 
     def train_model(self, itr):
         NS_start_time = time.time() * 1000.0
@@ -271,20 +280,29 @@ parser.add_argument('--neg', type=int, default=5)
 parser.add_argument('--alpha', type=float, default=5000.0)
 parser.add_argument('--batch_size', type=int, default=1024)
 parser.add_argument('--layers', nargs='?', default='[50, 50, 50, 50]')
-parser.add_argument('--dataname', nargs='?', default='ml1m-4')
+parser.add_argument('--dataname', nargs='?', default='ml1m-6')
 args = parser.parse_args()
 
 dataname = args.dataname
 
 
-train_df = pickle.load(open('./' + dataname + '/training_df.pkl'))
-vali_df = pickle.load(open('./' + dataname + '/valiing_df.pkl'))  # for validation
+# train_df = pickle.load(open('./' + dataname + '/training_df.pkl'))
+# vali_df = pickle.load(open('./' + dataname + '/valiing_df.pkl'))  # for validation
+# # vali_df = pickle.load(open('./' + dataname + '/testing_df.pkl'))  # for testing
+# key_genre = pickle.load(open('./' + dataname + '/key_genre.pkl'))
+# item_idd_genre_list = pickle.load(open('./' + dataname + '/item_idd_genre_list.pkl'))
+# genre_item_vector = pickle.load(open('./' + dataname + '/genre_item_vector.pkl'))
+# genre_count = pickle.load(open('./' + dataname + '/genre_count.pkl'))
+# user_genre_count = pickle.load(open('./' + dataname + '/user_genre_count.pkl'))
+
+train_df = pd.read_pickle(r'ml1m-6/training_df.pkl')
+vali_df = pd.read_pickle(r'ml1m-6/valiing_df.pkl')   # for validation
 # vali_df = pickle.load(open('./' + dataname + '/testing_df.pkl'))  # for testing
-key_genre = pickle.load(open('./' + dataname + '/key_genre.pkl'))
-item_idd_genre_list = pickle.load(open('./' + dataname + '/item_idd_genre_list.pkl'))
-genre_item_vector = pickle.load(open('./' + dataname + '/genre_item_vector.pkl'))
-genre_count = pickle.load(open('./' + dataname + '/genre_count.pkl'))
-user_genre_count = pickle.load(open('./' + dataname + '/user_genre_count.pkl'))
+key_genre = pd.read_pickle(r'ml1m-6/key_genre.pkl')
+item_idd_genre_list = pd.read_pickle(r'ml1m-6/item_idd_genre_list.pkl')
+genre_item_vector = pd.read_pickle(r'ml1m-6/genre_item_vector.pkl')
+genre_count = pd.read_pickle(r'ml1m-6/genre_count.pkl')
+user_genre_count = pd.read_pickle(r'ml1m-6/user_genre_count.pkl')
 
 num_item = len(train_df['item_id'].unique())
 num_user = len(train_df['user_id'].unique())
@@ -329,7 +347,7 @@ REO = np.zeros(4)
 
 n = args.n
 for i in range(n):
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         dpr = DPR_RSP(sess, args, train_df, vali_df, item_genre, genre_error_weight,
                       key_genre, item_genre_list, user_genre_count)
         [prec_one, rec_one, f_one, ndcg_one, Rec] = dpr.run()
@@ -369,4 +387,3 @@ print('Averaged RSP    @1\t%.7f\t||\t@5\t%.7f\t||\t@10\t%.7f\t||\t@15\t%.7f' \
 print('Averaged REO @1\t%.7f\t||\t@5\t%.7f\t||\t@10\t%.7f\t||\t@15\t%.7f' \
       % (REO[0], REO[1], REO[2], REO[3]))
 print('*' * 100)
-
