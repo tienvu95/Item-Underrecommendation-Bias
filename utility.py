@@ -102,8 +102,9 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
 
     for i in range(top4):
         item_id = int(new_user_prediction[i][0])
-        if item_id in test:
-            gl = item_idd_genre_list[item_id]
+        if item_id in test: #if the top items is in the test list
+            gl = item_idd_genre_list[item_id] #retrieve genres
+            #append in topk list if item position satistfies <k condition
             if i < top3:
                 for g in gl:
                     count_10_dict[g] += 1.0
@@ -130,6 +131,7 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
         recall_15_dict[k] = count_15_dict[k] / l + tmp
 
     # return precision, recall, ndcg_tmp
+    # for each user_tests
     return recall_1_dict, recall_5_dict, recall_10_dict, recall_15_dict, \
            count_1_dict, count_5_dict, count_10_dict, count_15_dict, test_dict
 
