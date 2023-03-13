@@ -157,7 +157,7 @@ class DPR_REO:
         #sigmoid to convert output to prediction
         self.adv_output = tf.nn.sigmoid(tf.matmul(adv_last, adv_W_out) + adv_b_out)
 
-        #adversarial cost
+        #adversarial cost (why they have the input_item_error_weight??)
         self.a_cost = tf.reduce_sum(tf.square(self.adv_output - self.input_item_genre) * self.input_item_error_weight)
 
         self.all_cost = self.r_cost - self.alpha * self.a_cost  # the loss function
@@ -333,6 +333,9 @@ for i in range(num_item):
             item_genre[i, k] = 1.0
 
 genre_count_mean_reciprocal = []
+
+##there are six key_genre --> in the training dataset, count the number of movies for each genre
+#genre_count = dictionary with number of movies for each keygrenre
 for k in key_genre:
     genre_count_mean_reciprocal.append(1.0 / genre_count[k])
 genre_count_mean_reciprocal = (np.array(genre_count_mean_reciprocal)).reshape((num_genre, 1))
