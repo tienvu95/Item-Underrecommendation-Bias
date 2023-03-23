@@ -71,10 +71,10 @@ class DPR_RSP:
             return False
 
     def run(self):
-        init = tf.global_variables_initializer()
+        init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
 
-        saver = tf.train.Saver([self.P, self.Q])
+        saver = tf.compat.v1.train.Saver([self.P, self.Q])
         self.loadmodel(saver, "./"+self.dataname+"/BPR_check_points")
 
         for epoch_itr in range(1, self.train_epoch + 1 + self.train_epoch_a):
@@ -160,9 +160,9 @@ class DPR_RSP:
         self.all_cost = self.r_cost - self.alpha * self.a_cost  # the loss function
 
         with tf.compat.v1.variable_scope("Optimizer", reuse=tf.compat.v1.AUTO_REUSE):
-            self.r_optimizer = tf.optimizers.Adam(learning_rate=self.lr_r).minimize(self.r_cost, var_list=para_r)
-            self.a_optimizer = tf.optimizers.Adam(learning_rate=self.lr_a).minimize(self.a_cost, var_list=para_a)
-            self.all_optimizer = tf.optimizers.Adam(learning_rate=self.lr_r).minimize(self.all_cost, var_list=para_r)
+            self.r_optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr_r).minimize(self.r_cost, var_list=para_r)
+            self.a_optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr_a).minimize(self.a_cost, var_list=para_a)
+            self.all_optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr_r).minimize(self.all_cost, var_list=para_r)
 
     def train_model(self, itr):
         NS_start_time = time.time() * 1000.0

@@ -50,7 +50,7 @@ class BPR:
         self._prepare_model()
 
     def run(self):
-        init = tf.global_variables_initializer()
+        init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
         for epoch_itr in range(1, self.train_epoch + 1):
             self.train_model(epoch_itr)
@@ -60,17 +60,17 @@ class BPR:
 
     def _prepare_model(self):
         with tf.name_scope("input_data"):
-            self.user_input = tf.placeholder(tf.int32, shape=[None, 1], name="user_input")
-            self.item_input_pos = tf.placeholder(tf.int32, shape=[None, 1], name="item_input_pos")
-            self.item_input_neg = tf.placeholder(tf.int32, shape=[None, 1], name="item_input_neg")
+            self.user_input = tf.compat.v1.placeholder(tf.int32, shape=[None, 1], name="user_input")
+            self.item_input_pos = tf.compat.v1.placeholder(tf.int32, shape=[None, 1], name="item_input_pos")
+            self.item_input_neg = tf.compat.v1.placeholder(tf.int32, shape=[None, 1], name="item_input_neg")
 
-        with tf.variable_scope("BPR", reuse=tf.AUTO_REUSE):
-            self.P = tf.get_variable(name="P", initializer=tf.truncated_normal(shape=[self.num_rows, self.hidden_neuron],
+        with tf.compat.v1.variable_scope("BPR", reuse=tf.compat.v1.AUTO_REUSE):
+            self.P = tf.compat.v1.get_variable(name="P", initializer=tf.compat.v1.truncated_normal(shape=[self.num_rows, self.hidden_neuron],
                                                                           mean=0, stddev=0.03), dtype=tf.float32)
-            self.Q = tf.get_variable(name="Q", initializer=tf.truncated_normal(shape=[self.num_cols, self.hidden_neuron],
+            self.Q = tf.compat.v1.get_variable(name="Q", initializer=tf.compat.v1.truncated_normal(shape=[self.num_cols, self.hidden_neuron],
                                                                           mean=0, stddev=0.03), dtype=tf.float32)
 
-        self.saver = tf.train.Saver([self.P, self.Q])
+        self.saver = tf.compat.v1.train.Saver([self.P, self.Q])
 
         p = tf.reduce_sum(tf.nn.embedding_lookup(self.P, self.user_input), 1)
         q_neg = tf.reduce_sum(tf.nn.embedding_lookup(self.Q, self.item_input_neg), 1)
@@ -85,21 +85,21 @@ class BPR:
         self.cost = cost1 + cost2  # the loss function
 
         if self.optimizer_method == "Adam":
-            optimizer = tf.train.AdamOptimizer(self.lr)
+            optimizer = tf.compat.v1.train.AdamOptimizer(self.lr)
         elif self.optimizer_method == "Adadelta":
-            optimizer = tf.train.AdadeltaOptimizer(self.lr)
+            optimizer = tf.compat.v1.train.AdadeltaOptimizer(self.lr)
         elif self.optimizer_method == "Adagrad":
-            optimizer = tf.train.AdadeltaOptimizer(self.lr)
+            optimizer = tf.compat.v1.train.AdadeltaOptimizer(self.lr)
         elif self.optimizer_method == "RMSProp":
-            optimizer = tf.train.RMSPropOptimizer(self.lr)
+            optimizer = tf.compat.v1.train.RMSPropOptimizer(self.lr)
         elif self.optimizer_method == "GradientDescent":
-            optimizer = tf.train.GradientDescentOptimizer(self.lr)
+            optimizer = tf.compat.v1.train.GradientDescentOptimizer(self.lr)
         elif self.optimizer_method == "Momentum":
-            optimizer = tf.train.MomentumOptimizer(self.lr, 0.9)
+            optimizer = tf.compat.v1.train.MomentumOptimizer(self.lr, 0.9)
         else:
             raise ValueError("Optimizer Key ERROR")
 
-        with tf.variable_scope("Optimizer", reuse=tf.AUTO_REUSE):
+        with tf.compat.v1.variable_scope("Optimizer", reuse=tf.compat.v1.AUTO_REUSE):
             self.optimizer = optimizer.minimize(self.cost)
 
     def train_model(self, itr):
@@ -181,14 +181,23 @@ args = parser.parse_args()
 dataname = args.dataname
 
 
-train_df = pickle.load(open('./' + dataname + '/training_df.pkl'))
-vali_df = pickle.load(open('./' + dataname + '/valiing_df.pkl'))  # for validation
+# train_df = pickle.load(open('./' + dataname + '/training_df.pkl'))
+# vali_df = pickle.load(open('./' + dataname + '/valiing_df.pkl'))  # for validation
+# # vali_df = pickle.load(open('./' + dataname + '/testing_df.pkl'))  # for testing
+# key_genre = pickle.load(open('./' + dataname + '/key_genre.pkl'))
+# item_idd_genre_list = pickle.load(open('./' + dataname + '/item_idd_genre_list.pkl'))
+# genre_item_vector = pickle.load(open('./' + dataname + '/genre_item_vector.pkl'))
+# genre_count = pickle.load(open('./' + dataname + '/genre_count.pkl'))
+# user_genre_count = pickle.load(open('./' + dataname + '/user_genre_count.pkl'))
+
+train_df = pd.read_pickle(r'ml1m-6/training_df.pkl')
+vali_df = pd.read_pickle(r'ml1m-6/valiing_df.pkl')   # for validation
 # vali_df = pickle.load(open('./' + dataname + '/testing_df.pkl'))  # for testing
-key_genre = pickle.load(open('./' + dataname + '/key_genre.pkl'))
-item_idd_genre_list = pickle.load(open('./' + dataname + '/item_idd_genre_list.pkl'))
-genre_item_vector = pickle.load(open('./' + dataname + '/genre_item_vector.pkl'))
-genre_count = pickle.load(open('./' + dataname + '/genre_count.pkl'))
-user_genre_count = pickle.load(open('./' + dataname + '/user_genre_count.pkl'))
+key_genre = pd.read_pickle(r'ml1m-6/key_genre.pkl')
+item_idd_genre_list = pd.read_pickle(r'ml1m-6/item_idd_genre_list.pkl')
+genre_item_vector = pd.read_pickle(r'ml1m-6/genre_item_vector.pkl')
+genre_count = pd.read_pickle(r'ml1m-6/genre_count.pkl')
+user_genre_count = pd.read_pickle(r'ml1m-6/user_genre_count.pkl')
 
 num_item = len(train_df['item_id'].unique())
 num_user = len(train_df['user_id'].unique())
@@ -225,7 +234,7 @@ REO = np.zeros(4)
 
 n = args.n
 for i in range(n):
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         bpr = BPR(sess, args, train_df, vali_df, key_genre, item_genre_list, user_genre_count)
         [prec_one, rec_one, f_one, ndcg_one, Rec] = bpr.run()
         [RSP_one, REO_one] = utility.ranking_analysis(Rec, vali_df, train_df, key_genre, item_genre_list,
