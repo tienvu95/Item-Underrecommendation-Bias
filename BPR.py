@@ -167,11 +167,11 @@ class BPR:
 parser = argparse.ArgumentParser(description='BPR')
 parser.add_argument('--train_epoch', type=int, default=20)
 parser.add_argument('--display_step', type=int, default=1)
-parser.add_argument('--lr', type=float, default=0.001)
+parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--reg', type=float, default=0.1)
 parser.add_argument('--optimizer_method', choices=['Adam', 'Adadelta', 'Adagrad', 'RMSProp', 'GradientDescent',
                                                    'Momentum'], default='Adam')
-parser.add_argument('--hidden_neuron', type=int, default=64)
+parser.add_argument('--hidden_neuron', type=int, default=20)
 parser.add_argument('--n', type=int, default=1)
 parser.add_argument('--neg', type=int, default=5)
 parser.add_argument('--batch_size', type=int, default=1024)

@@ -76,7 +76,7 @@ class DPR_REO:
         self.sess.run(init)
 
         saver = tf.compat.v1.train.Saver([self.P, self.Q])
-        self.loadmodel(saver, "./"+self.dataname+"/BPR_check_points")
+        self.loadmodel(saver, "./"+self.dataname+"/BPR_check_points_2")
 
         for epoch_itr in range(1, self.train_epoch + 1 + self.train_epoch_a):
             self.train_model(epoch_itr)
