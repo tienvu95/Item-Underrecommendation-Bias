@@ -76,7 +76,7 @@ class DPR_REO:
         self.sess.run(init)
 
         saver = tf.compat.v1.train.Saver([self.P, self.Q])
-        self.loadmodel(saver, "./"+self.dataname+"/BPR_check_points_2")
+        self.loadmodel(saver, "./"+self.dataname+"/BPR_check_points")
 
         for epoch_itr in range(1, self.train_epoch + 1 + self.train_epoch_a):
             self.train_model(epoch_itr)
@@ -182,7 +182,7 @@ class DPR_REO:
         start_time = time.time() * 1000.0
         num_batch = int(num_sample / float(self.batch_size)) + 1
         random_idx = np.random.permutation(num_sample)
-        for i in range(num_batch):
+        for i in range(20):
             # get the indices of the current batch
             if i == num_batch - 1:
                 batch_idx = random_idx[i * self.batch_size:]
