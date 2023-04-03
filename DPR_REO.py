@@ -182,7 +182,7 @@ class DPR_REO:
         start_time = time.time() * 1000.0
         num_batch = int(num_sample / float(self.batch_size)) + 1
         random_idx = np.random.permutation(num_sample)
-        for i in range(20):
+        for i in range(num_batch):
             # get the indices of the current batch
             if i == num_batch - 1:
                 batch_idx = random_idx[i * self.batch_size:]
