@@ -190,8 +190,8 @@ dataname = args.dataname
 # genre_count = pickle.load(open('./' + dataname + '/genre_count.pkl'))
 # user_genre_count = pickle.load(open('./' + dataname + '/user_genre_count.pkl'))
 
-train_df = pd.read_pickle(r'ml1m-6/training_df.pkl')
-vali_df = pd.read_pickle(r'ml1m-6/valiing_df.pkl')   # for validation
+train_df = pd.read_pickle(r'ml1m-6/train_df.pkl')
+vali_df = pd.read_pickle(r'ml1m-6/test_df.pkl')   # for validation
 # vali_df = pickle.load(open('./' + dataname + '/testing_df.pkl'))  # for testing
 key_genre = pd.read_pickle(r'ml1m-6/key_genre.pkl')
 item_idd_genre_list = pd.read_pickle(r'ml1m-6/item_idd_genre_list.pkl')
